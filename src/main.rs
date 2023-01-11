@@ -1,7 +1,11 @@
-fn main() {
+extern crate anyhow;
+
+use rust_bert::pipelines::ner::NERModel;
+
+fn main() -> anyhow::Result<()> {
     println!("Hello, world!");
 
-    let ner_model = NERModel::new(default::default())?;
+    let ner_model = NERModel::new(Default::default())?;
 
     let input = [
         "My name is Amy. I live in Paris.",
@@ -9,4 +13,10 @@ fn main() {
     ];
 
     let output = ner_model.predict(&input);
+
+    for entity in output {
+        println!("{:?}",entity);
+    }
+
+    Ok(())
 }
