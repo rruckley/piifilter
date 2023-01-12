@@ -1,15 +1,9 @@
 extern crate anyhow;
 
 use rust_bert::pipelines::{ner::NERModel};
-use rust_bert::pipelines::question_answering::{QaInput,QuestionAnsweringConfig, QuestionAnsweringModel};
 use rust_bert::pipelines::pos_tagging::POSModel;
-use rust_bert::resources::RemoteResource;
-use rust_bert::longformer::{
-    LongformerConfigResources, LongformerMergesResources, LongformerModelResources,
-    LongformerVocabResources,
-};
-use rust_bert::pipelines::common::ModelType;
 
+mod docs;
 fn main() -> anyhow::Result<()> {
 
     let input = [
