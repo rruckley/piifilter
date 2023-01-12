@@ -12,7 +12,6 @@ use rust_bert::pipelines::common::ModelType;
 
 fn main() -> anyhow::Result<()> {
 
-    /***
     let input = [
         "My name is Amy. I live in Paris.",
         "Paris is a city in France.",
@@ -32,34 +31,7 @@ fn main() -> anyhow::Result<()> {
 
     for entity in output {
         println!("{:?}",entity);
-    }
-    ***/
-
-    // Question / Answer section
-    let config = QuestionAnsweringConfig::new(
-        ModelType::Longformer,
-        RemoteResource::from_pretrained(LongformerModelResources::LONGFORMER_BASE_SQUAD1),
-        RemoteResource::from_pretrained(LongformerConfigResources::LONGFORMER_BASE_SQUAD1),
-        RemoteResource::from_pretrained(LongformerVocabResources::LONGFORMER_BASE_SQUAD1),
-        Some(RemoteResource::from_pretrained(
-            LongformerMergesResources::LONGFORMER_BASE_SQUAD1,
-        )),
-        false,
-        None,
-        false,
-    );
-
-    let qa_model = QuestionAnsweringModel::new(config)?;
-
-    let question = String::from("Where does Ryan live ?");
-    let context = String::from("Ryan lives in Sydney, Australia");
-
-    let context2 = String::from("Richard Branson, founder of Virgin Galactic, is now offering manned space flights for as little as $200,000.");
-    let question2 = String::from("What is Virgin Galactic?");
-
-    let answers = qa_model.predict(&[QaInput { question, context }, QaInput { question: question2,context:  context2}], 1, 32);
-    println!("{:?}",answers);
-
+    };
     // PoS tagging
     let pos_model = POSModel::new(Default::default())?;
 
