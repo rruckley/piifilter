@@ -2,7 +2,7 @@
 /// 
 /// 
 
-enum DocType {
+pub enum DocType {
     CurrentPassport,
     ExpiredPassport,
     BirthCertificate,
@@ -11,17 +11,18 @@ enum DocType {
     ForeignPassport,
 }
 
-struct Document {
-    docType : DocType,
+pub struct Document {
+    doc_type : DocType,
     points : u32 ,
     regex : String,
 }
 
 impl Document {
-    fn new(docType, points) -> Self {
+    pub fn new(doc_type : DocType, points : u32) -> Self {
         Self {
-            docType,
+            doc_type,
             points,
+            regex: "sample".to_string(),
         }
     }
 }
