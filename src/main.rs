@@ -3,8 +3,27 @@ extern crate anyhow;
 use rust_bert::pipelines::{ner::NERModel};
 use rust_bert::pipelines::pos_tagging::POSModel;
 
+use rocket::form::Form;
+
+#[macro_use] extern crate rocket;
+
+enum ActionType {
+    Regex,
+    NamedEntityRecognition,
+    Both,
+}
+
+#[derive(FromForm)]
+struct InputData {
+    text : String,
+    action : String,
+}
+
 mod docs;
-fn main() -> anyhow::Result<()> {
+
+use docs::Document;
+#[post("/process", data = "<data>")]
+fn process(data : Form<InputData>) -> std::io::Result<()> {
 
     let input = [
         "My name is Amy. I live in Paris.",
@@ -19,7 +38,7 @@ fn main() -> anyhow::Result<()> {
         println!("Input: {}",line);
     }
 
-    let ner_model = NERModel::new(Default::default())?;
+    let ner_model = NERModel::new(Default::default()).expect("Could not create NER model");
 
     let output = ner_model.predict_full_entities(&input);
 
@@ -27,7 +46,7 @@ fn main() -> anyhow::Result<()> {
         println!("{:?}",entity);
     };
     // PoS tagging
-    let pos_model = POSModel::new(Default::default())?;
+    let pos_model = POSModel::new(Default::default()).expect("Couldnt create PoS model");
 
     let input = ["My name is Ryan Ruckley and I am an architect."];
     let output = pos_model.predict(&input);
@@ -37,4 +56,15 @@ fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+#[get("/")]
+fn index() -> &'static str {
+    "Hello world!"
+}
+
+#[launch]
+fn rocket() -> _ {
+    let _passport = Document::new(docs::DocType::CurrentPassport,70);
+    rocket::build().mount("/", routes![index,process])
 }
