@@ -4,6 +4,12 @@ use rust_bert::pipelines::{ner::NERModel};
 use rust_bert::pipelines::pos_tagging::POSModel;
 
 use rocket::form::Form;
+use rocket::response::{content, status};
+use rocket::http::ContentType;
+
+mod docs;
+use docs::Document;
+
 
 #[macro_use] extern crate rocket;
 
@@ -19,9 +25,7 @@ struct InputData {
     action : String,
 }
 
-mod docs;
 
-use docs::Document;
 #[post("/process", data = "<data>")]
 fn process(data : Form<InputData>) -> std::io::Result<()> {
 
@@ -59,8 +63,20 @@ fn process(data : Form<InputData>) -> std::io::Result<()> {
 }
 
 #[get("/")]
-fn index() -> &'static str {
-    "Hello world!"
+fn index() -> (ContentType, &'static str) {
+    (ContentType::HTML, "
+    <html>
+    <head><title>PII Experiments</title></head>
+    <body>
+    <h2>PII Filter</h2>
+    <form method=\"post\" action=\"/process\">
+    <textarea name=\"text\"></textarea>
+    <input name=\"action\" />
+    <input type=\"submit\" />
+    </form>
+    </body>
+    </html>
+    ")
 }
 
 #[launch]
