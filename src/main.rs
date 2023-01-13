@@ -5,6 +5,7 @@ use rust_bert::pipelines::pos_tagging::POSModel;
 
 use rocket::form::Form;
 use rocket::response::{content, status};
+use rocket::response::status::NotFound;
 use rocket::http::ContentType;
 
 mod docs;
@@ -26,9 +27,16 @@ struct InputData {
 }
 
 
-#[post("/process", data = "<data>")]
-fn process(data : Form<InputData>) -> std::io::Result<()> {
+#[post("/process", data = "<form_data>")]
+async fn process(form_data : Form<InputData>) -> (ContentType,String) {
+    let action = &form_data.action;
+    let result = format!("<html><h2>All Good with action {}</h2></html>",action); 
+    (ContentType::HTML,result)
+}
 
+fn process_text(input : &[&str], context : String) -> Result<String,NotFound<String>> {
+
+    /***
     let input = [
         "My name is Amy. I live in Paris.",
         "Paris is a city in France.",
@@ -37,14 +45,11 @@ fn process(data : Form<InputData>) -> std::io::Result<()> {
         "We have given soluiton walkthrough (Sukumar) and then Mona has shared the reasoning for the http used within the docker",
         "Richard Branson, founder of Virgin Galactic, is now offering manned space flights for as little as $200,000."
     ];
-
-    for line in input {
-        println!("Input: {}",line);
-    }
+    ***/
 
     let ner_model = NERModel::new(Default::default()).expect("Could not create NER model");
 
-    let output = ner_model.predict_full_entities(&input);
+    let output = ner_model.predict_full_entities(input);
 
     for entity in output {
         println!("{:?}",entity);
@@ -59,11 +64,11 @@ fn process(data : Form<InputData>) -> std::io::Result<()> {
         println!("{} - {:?}",pos, pos_tag);
     }
 
-    Ok(())
+    Ok("<html><h2>All Good</h2></html>".to_owned())
 }
 
 #[get("/")]
-fn index() -> (ContentType, &'static str) {
+async fn index() -> (ContentType, &'static str) {
     (ContentType::HTML, "
     <html>
     <head><title>PII Experiments</title></head>
@@ -80,7 +85,8 @@ fn index() -> (ContentType, &'static str) {
 }
 
 #[launch]
-fn rocket() -> _ {
+async fn rocket() -> _ {
     let _passport = Document::new(docs::DocType::CurrentPassport,70);
-    rocket::build().mount("/", routes![index,process])
+    rocket::build()
+        .mount("/", routes![index,process])
 }
