@@ -1,34 +1,57 @@
 
-use rust_bert::pipelines::{ner::NERModel};
+use rust_bert::pipelines::{ner::NERModel, ner::Entity};
+use tokio::{sync::oneshot, task};
+
+use std::{
+    sync::mpsc,
+    thread::{self, JoinHandle},
+};
+
+type Message = (Vec<String>, oneshot::Sender<Vec<Vec<Entity>>>);
 pub struct NERFilter {
-    model : NERModel,
+    sender: mpsc::SyncSender<Message>,
 }
 
 impl NERFilter {
-    pub fn new() -> Self {
-        let model = NERModel::new(Default::default()).expect("Could not create NER model");
-        Self {
-            model
-        }
+    pub fn spawn() -> (JoinHandle<Result<String,String>>, NERFilter) {
+        let (sender, receiver) = mpsc::sync_channel(100);
+        let handle = thread::spawn(move || Self::runner(receiver));
+
+        (handle, NERFilter { sender })
     }
-    pub fn filter(context : String) -> Result<String,String> {
+    fn runner(receiver: mpsc::Receiver<Message>) -> Result<String,String> {
         let ner_model = NERModel::new(Default::default()).expect("Could not create NER model");
-    
-        let input = [context.as_str()];
-        let output = ner_model.predict_full_entities(&input);
-    
+
+        while let Ok((context, sender)) = receiver.recv() {
+            let input = [context.first().unwrap().as_str()];
+            let output = ner_model.predict_full_entities(&input);
+            sender.send(output.to_owned());
+        }
+
+        Ok("Finished.".to_owned())
+    }
+    pub async fn filter(&self, context : String) -> Result<String,String> {
+        let input = vec![context];
+
+        let (sender, receiver) = oneshot::channel();
+        task::block_in_place(|| self.sender.send((input, sender))).expect("NER:Could not spawn task");
+        let output = receiver.await.expect("NER: Could not get message from thread");
+        
         let mut result = "<html><h2>POS Output</h2><body>".to_owned();
-        result.push_str("<ul>");
-        for tag in output {
-            for t in tag {
+        
+        for row in output {
+            result.push_str("<ul>");
+            for t in row {
                 result.push_str("<li>");
                 result.push_str(t.label.as_str());
                 result.push_str(" : ");
                 result.push_str(t.word.as_str());
                 result.push_str("</li>");
-            }
+            };
+            result.push_str("</ul>");
         }
-        result.push_str("</ul></body></html>");
+        
+        result.push_str("</body></html>");
         Ok(result)
     }
 }
