@@ -1,16 +1,24 @@
 extern crate anyhow;
 
-use rust_bert::pipelines::{ner::NERModel};
-use rust_bert::pipelines::pos_tagging::POSModel;
+
 
 use rocket::form::Form;
 use rocket::response::{content, status};
 use rocket::response::status::NotFound;
 use rocket::http::ContentType;
+use rocket::State;
 
+use tokio::task;
+
+mod ner;
+mod pos;
+mod regex;
 mod docs;
 use docs::Document;
-use tokio::task;
+
+use ner::NERFilter;
+use pos::POSFilter;
+use crate::regex::RegexFilter;
 
 
 #[macro_use] extern crate rocket;
@@ -18,6 +26,7 @@ use tokio::task;
 enum ActionType {
     Regex,
     NamedEntityRecognition,
+    PartsOfSpeed,
     Both,
 }
 
@@ -45,74 +54,19 @@ async fn process_regex(context : String) -> Result<String,String> {
     Ok("Regex Not implemented".to_owned())
 }
 
-fn _holder(context : String) -> Result<String,String> {
-    let ner_model = NERModel::new(Default::default()).expect("Could not create NER model");
-
-    let input = [context.as_str()];
-    let output = ner_model.predict_full_entities(&input);
-
-    for entity in output {
-        println!("{:?}",entity);
-    };
-    Ok("Filtering NER".to_owned())
-}
-
-fn filter_ner(context : String) -> Result<String,String> {
-    let ner_model = NERModel::new(Default::default()).expect("Could not create NER model");
-
-    let input = [context.as_str()];
-    let output = ner_model.predict_full_entities(&input);
-
-    let mut result = "<html><h2>POS Output</h2><body>".to_owned();
-    result.push_str("<ul>");
-    for tag in output {
-        for t in tag {
-            result.push_str("<li>");
-            result.push_str(t.label.as_str());
-            result.push_str(" : ");
-            result.push_str(t.word.as_str());
-            result.push_str("</li>");
-        }
-    }
-    result.push_str("</ul></body></html>");
-    Ok(result)
-}
-
-async fn process_ner(context : String) -> Result<String,String> {
+async fn process_ner(ner : NERFilter, context : String) -> Result<String,String> {
     let result = task::spawn_blocking(move || {
-        filter_ner(context)
+        ner(context)
     }).await.unwrap();
     Ok(format!("<html><h2>NER All Good</h2><p>{}</p></html>",result.expect("Error with NER model")).to_owned())
 }
 
-fn filter_pos(context : String) -> Result<String,String> {
-    let pos_model = POSModel::new(Default::default()).expect("Couldnt create PoS model");
-
-    let input = [context];
-    let output = pos_model.predict(&input);
-
-    let mut result = "<html><h2>POS Output</h2><body>".to_owned();
-    result.push_str("<ul>");
-    for tag in output {
-        for t in tag {
-            result.push_str("<li>");
-            result.push_str(t.label.as_str());
-            result.push_str(" : ");
-            result.push_str(t.word.as_str());
-            result.push_str("</li>");
-        }
-    }
-    result.push_str("</ul></body></html>");
-
-    Ok(result)
-}
-
-async fn process_pos(context : String) -> Result<String,String> {
-  // PoS tagging
-  let result = task::spawn_blocking(move || {
-    filter_pos(context)
-  }).await.unwrap();
-  Ok(format!("Process POS: {}",result.unwrap()).to_owned())
+async fn process_pos(pos : POSFilter, context : String) -> Result<String,String> {
+    // PoS tagging
+    let result = task::spawn_blocking(move || {
+        pos(context)
+    }).await.unwrap();
+    Ok(format!("Process POS: {}",result.unwrap()).to_owned())
 }
 
 #[get("/")]
@@ -138,9 +92,24 @@ async fn index() -> (ContentType, &'static str) {
     ")
 }
 
+struct Filters {
+    ner : NERFilter,
+    pos : POSFilter,
+    regex : RegexFilter,
+}
+
 #[launch]
 async fn rocket() -> _ {
     let _passport = Document::new(docs::DocType::CurrentPassport,70);
+    let ner = NERFilter::new();
+    let pos = POSFilter::new();
+    let regex = RegexFilter::new();
+    let filters = Filters {
+        ner,
+        pos,
+        regex,
+    };
     rocket::build()
+        .manage(filters)
         .mount("/", routes![index,process])
 }
