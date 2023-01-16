@@ -1,14 +1,8 @@
 extern crate anyhow;
 
-
-
 use rocket::form::Form;
-use rocket::response::{content, status};
-use rocket::response::status::NotFound;
 use rocket::http::ContentType;
 use rocket::State;
-
-use tokio::task;
 
 mod ner;
 mod pos;
@@ -18,7 +12,6 @@ use docs::Document;
 
 use ner::NERFilter;
 use pos::POSFilter;
-use crate::regex::RegexFilter;
 
 
 #[macro_use] extern crate rocket;
@@ -38,35 +31,32 @@ struct InputData {
 
 
 #[post("/process", data = "<form_data>")]
-async fn process(form_data : Form<InputData>) -> (ContentType,String) {
+async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>, form_data : Form<InputData>) -> (ContentType,String) {
     let action = &form_data.action;
     let result = match action.as_str() {
         "regex" => process_regex(form_data.text.clone()).await,
-        "nep" => process_ner(form_data.text.clone()).await,
-        "pos" => process_pos(form_data.text.clone()).await,
+        "nep" => process_ner(ner, form_data.text.clone()).await,
+        "pos" => process_pos(pos, form_data.text.clone()).await,
         _ => Ok(format!("Invalid Action: {}",action).to_owned())
     };
     (ContentType::HTML,result.unwrap())
 }
 
 ///! Function to execute regex against supplied text to find PII identifiers
-async fn process_regex(context : String) -> Result<String,String> {
+async fn process_regex(_context : String) -> Result<String,String> {
     Ok("Regex Not implemented".to_owned())
 }
 
-async fn process_ner(ner : NERFilter, context : String) -> Result<String,String> {
-    let result = task::spawn_blocking(move || {
-        ner(context)
-    }).await.unwrap();
-    Ok(format!("<html><h2>NER All Good</h2><p>{}</p></html>",result.expect("Error with NER model")).to_owned())
+async fn process_ner(ner : &State<NERFilter>, context : String) -> Result<String,String> {
+    let result = ner.filter(context).await?;
+    Ok(format!("<html><h2>NER All Good</h2><p>{}</p></html>",result.to_owned()))
 }
 
-async fn process_pos(pos : POSFilter, context : String) -> Result<String,String> {
+async fn process_pos(pos :&State<POSFilter>, context : String) -> Result<String,String> {
     // PoS tagging
-    let result = task::spawn_blocking(move || {
-        pos(context)
-    }).await.unwrap();
-    Ok(format!("Process POS: {}",result.unwrap()).to_owned())
+    let result = pos.filter(context).await?;
+
+    Ok(format!("Process POS: {}",result))
 }
 
 #[get("/")]
@@ -92,24 +82,13 @@ async fn index() -> (ContentType, &'static str) {
     ")
 }
 
-struct Filters {
-    ner : NERFilter,
-    pos : POSFilter,
-    regex : RegexFilter,
-}
-
 #[launch]
 async fn rocket() -> _ {
     let _passport = Document::new(docs::DocType::CurrentPassport,70);
-    let ner = NERFilter::new();
-    let pos = POSFilter::new();
-    let regex = RegexFilter::new();
-    let filters = Filters {
-        ner,
-        pos,
-        regex,
-    };
+    let (_handle,pos_filter) = POSFilter::spawn();
+    let (_handle2, ner_filter) = NERFilter::spawn();
     rocket::build()
-        .manage(filters)
+        .manage(pos_filter)
+        .manage(ner_filter)
         .mount("/", routes![index,process])
 }
