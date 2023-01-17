@@ -49,7 +49,7 @@ async fn process_regex(_context : String) -> Result<String,String> {
 
 async fn process_ner(ner : &State<NERFilter>, context : String) -> Result<String,String> {
     let result = ner.filter(context).await?;
-    Ok(format!("<html><h2>NER All Good</h2><p>{}</p></html>",result.to_owned()))
+    Ok(format!("<html><h2>NER Output</h2><p>{}</p></html>",result.to_owned()))
 }
 
 async fn process_pos(pos :&State<POSFilter>, context : String) -> Result<String,String> {
