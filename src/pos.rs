@@ -40,15 +40,9 @@ impl POSFilter {
         let mut result = "<html><h2>POS Output</h2><body>".to_owned();
         
         for row in output {
-            result.push_str("<ul>");
             for t in row {
-                result.push_str("<li>");
-                result.push_str(t.label.as_str());
-                result.push_str(" : ");
-                result.push_str(t.word.as_str());
-                result.push_str("</li>");
-            };
-            result.push_str("</ul><br />");
+                result.push_str(format!("<span class=\"{}\">{}</span>&nbsp;",t.label,t.word).as_str());
+            };  
         }
         result.push_str("</body></html>");
     
