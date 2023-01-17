@@ -38,16 +38,20 @@ impl NERFilter {
         task::block_in_place(|| self.sender.send((input, sender))).expect("NER:Could not spawn task");
         let output = receiver.await.expect("NER: Could not get message from thread");
         
-        let mut result = "<html><h2>NER Output</h2><body>".to_owned();
+        let mut ev = vec![];
         for row in output {
             for t in row {
-                let span = format!("<span class=\"{}\">{}</span>",t.label,t.word);
-                let start = t.offset.begin as usize;
-                let finish = t.offset.end as usize;
-                mangle.replace_range(start..finish, span.as_str());
+                ev.push(t);
             };
         }
-        result.push_str(format!("<body><h2>NER Output</h2><div>{}</div></body>",mangle).as_str());
+        for e in ev.iter().rev() {
+            let start = e.offset.begin as usize;
+            let finish = e.offset.end as usize;
+
+            let span = format!("<span class=\"{}\" start=\"{}\" finish=\"{}\">{}</span>",e.label,start,finish,e.word);
+            mangle.replace_range(start..finish, span.as_str());
+        } 
+        let result =format!("<div>{}</div>",mangle);
         Ok(result)
     }
 }
