@@ -1,6 +1,6 @@
 use std::{
     sync::mpsc,
-    thread::{self, JoinHandle}, result,
+    thread::{self, JoinHandle},
 };
 use tokio::{sync::oneshot, task};
 
@@ -24,7 +24,7 @@ impl POSFilter {
 
         while let Ok((context, sender)) = receiver.recv() {
             let result = model.predict(&context);
-            sender.send(result);
+            let _send_result = sender.send(result);
         }
 
         Ok("POS Runner Done".to_owned())
@@ -37,14 +37,14 @@ impl POSFilter {
         task::block_in_place(|| self.sender.send((input, sender))).expect("POS: Could not spawn task");
         let output = receiver.await.expect("POS: Could not receive message from thread");
     
-        let mut result = "<html><h2>POS Output</h2><body>".to_owned();
+        let mut result = "<div class=\"pos\">".to_owned();
         
         for row in output {
             for t in row {
                 result.push_str(format!("<span class=\"{}\">{}</span>&nbsp;",t.label,t.word).as_str());
             };  
         }
-        result.push_str("</body></html>");
+        result.push_str("</div>");
     
         Ok(result)
     }
