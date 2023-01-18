@@ -36,9 +36,11 @@ async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<
         "dialog" => process_dialog(dialog, form_data.text.clone()).await,
         "all" => {
             let ner = process_ner(ner, form_data.text.clone()).await.unwrap();
+            let ns = NERFilter::get_style();
             let pos = process_pos(pos, form_data.text.clone()).await.unwrap();
+            let ps = POSFilter::get_style();
             let reg = process_regex(regex, form_data.text.clone()).await.unwrap();
-            Ok(format!("<html><body>{}<br />{}<br />{}</body>",ner,pos,reg))
+            Ok(format!("<html><head>{}{}</head><body>{}<br />{}<br />{}</body>",ns,ps,ner,pos,reg))
         }
         _ => Ok(format!("Invalid Action: {}",action))
     };
@@ -52,41 +54,14 @@ async fn process_regex(regex : &State<RegexFilter>,context : String) -> Result<S
 
 async fn process_ner(ner : &State<NERFilter>, context : String) -> Result<String,String> {
     let result = ner.filter(context).await?;
-    let style = "
-    <style type=\"text/css\">
-    span.PER {
-        background-color: #9F9;
-    }
-    span.MISC {
-        background-color: #99F;
-    }
-    span.LOC {
-        background-color: #FF9;
-    }
-    span.ORG {
-        background-color: #9F9;
-    }
-    </style>
-    ";
+    let style = NERFilter::get_style();
     Ok(format!("<html><head><title>NER</title>{}</head><h2>NER Output</h2><p>{}</p></html>",style,result))
 }
 
 async fn process_pos(pos :&State<POSFilter>, context : String) -> Result<String,String> {
     // PoS tagging
     let result = pos.filter(context).await?;
-    let style = "
-    <style type=\"text/css\">
-    span.NN {
-        background-color: #9F9;
-    }
-    span.NNP {
-        background-color: #99F;
-    }
-    span.JJ {
-        background-color: #F99;
-    }
-    </style>
-    ";
+    let style = POSFilter::get_style();
 
     Ok(format!("<html><head>{}</head><body>{}</body></html>",style,result))
 }
