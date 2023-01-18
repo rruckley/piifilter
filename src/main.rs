@@ -7,21 +7,17 @@ use rocket::State;
 mod ner;
 mod pos;
 mod regex;
+mod dialog;
 mod docs;
 use docs::Document;
 
 use ner::NERFilter;
 use pos::POSFilter;
+use crate::regex::RegexFilter;
+use dialog::DialogFilter;
 
 
 #[macro_use] extern crate rocket;
-
-enum ActionType {
-    Regex,
-    NamedEntityRecognition,
-    PartsOfSpeed,
-    Both,
-}
 
 #[derive(FromForm)]
 struct InputData {
@@ -31,32 +27,74 @@ struct InputData {
 
 
 #[post("/process", data = "<form_data>")]
-async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>, form_data : Form<InputData>) -> (ContentType,String) {
+async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<RegexFilter>,dialog : &State<DialogFilter>, form_data : Form<InputData>) -> (ContentType,String) {
     let action = &form_data.action;
     let result = match action.as_str() {
-        "regex" => process_regex(form_data.text.clone()).await,
+        "regex" => process_regex(regex, form_data.text.clone()).await,
         "nep" => process_ner(ner, form_data.text.clone()).await,
         "pos" => process_pos(pos, form_data.text.clone()).await,
-        _ => Ok(format!("Invalid Action: {}",action).to_owned())
+        "dialog" => process_dialog(dialog, form_data.text.clone()).await,
+        "all" => {
+            let ner = process_ner(ner, form_data.text.clone()).await.unwrap();
+            let pos = process_pos(pos, form_data.text.clone()).await.unwrap();
+            let reg = process_regex(regex, form_data.text.clone()).await.unwrap();
+            Ok(format!("<html><body>{}<br />{}<br />{}</body>",ner,pos,reg))
+        }
+        _ => Ok(format!("Invalid Action: {}",action))
     };
     (ContentType::HTML,result.unwrap())
 }
 
 ///! Function to execute regex against supplied text to find PII identifiers
-async fn process_regex(_context : String) -> Result<String,String> {
-    Ok("Regex Not implemented".to_owned())
+async fn process_regex(regex : &State<RegexFilter>,context : String) -> Result<String,String> {
+    Ok(regex.filter(context).unwrap())
 }
 
 async fn process_ner(ner : &State<NERFilter>, context : String) -> Result<String,String> {
     let result = ner.filter(context).await?;
-    Ok(format!("<html><h2>NER Output</h2><p>{}</p></html>",result.to_owned()))
+    let style = "
+    <style type=\"text/css\">
+    span.PER {
+        background-color: #9F9;
+    }
+    span.MISC {
+        background-color: #99F;
+    }
+    span.LOC {
+        background-color: #FF9;
+    }
+    span.ORG {
+        background-color: #9F9;
+    }
+    </style>
+    ";
+    Ok(format!("<html><head><title>NER</title>{}</head><h2>NER Output</h2><p>{}</p></html>",style,result))
 }
 
 async fn process_pos(pos :&State<POSFilter>, context : String) -> Result<String,String> {
     // PoS tagging
     let result = pos.filter(context).await?;
+    let style = "
+    <style type=\"text/css\">
+    span.NN {
+        background-color: #9F9;
+    }
+    span.NNP {
+        background-color: #99F;
+    }
+    span.JJ {
+        background-color: #F99;
+    }
+    </style>
+    ";
 
-    Ok(format!("Process POS: {}",result))
+    Ok(format!("<html><head>{}</head><body>{}</body></html>",style,result))
+}
+
+async fn process_dialog(dialog: &State<DialogFilter>, context : String) -> Result<String,String> {
+    let result = dialog.filter(context).await?;
+
+    Ok(format!("<h2>Regular Expressions</h2>{}",result))
 }
 
 #[get("/")]
@@ -73,6 +111,7 @@ async fn index() -> (ContentType, &'static str) {
     <option value=\"regex\">Regular Expressions</option>
     <option value=\"nep\">Named Entity Parsing</option>
     <option value=\"pos\">Parts of Speech Tagging</option>
+    <option value=\"all\">All</option>
     </select>
     <br />
     <input type=\"submit\" />
@@ -85,10 +124,14 @@ async fn index() -> (ContentType, &'static str) {
 #[launch]
 async fn rocket() -> _ {
     let _passport = Document::new(docs::DocType::CurrentPassport,70);
-    let (_handle,pos_filter) = POSFilter::spawn();
+    let (_handle1, pos_filter) = POSFilter::spawn();
     let (_handle2, ner_filter) = NERFilter::spawn();
+    let regex_filter= RegexFilter::new();
+    let (_handle3,dialog_filter) = DialogFilter::spawn();
     rocket::build()
         .manage(pos_filter)
         .manage(ner_filter)
+        .manage(regex_filter)
+        .manage(dialog_filter)
         .mount("/", routes![index,process])
 }
