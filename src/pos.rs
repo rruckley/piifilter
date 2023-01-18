@@ -29,6 +29,21 @@ impl POSFilter {
 
         Ok("POS Runner Done".to_owned())
     }
+    pub fn get_style() -> String {
+        "
+        <style type=\"text/css\">
+        span.NN {
+            background-color: #9F9;
+        }
+        span.NNP {
+            background-color: #99F;
+        }
+        span.JJ {
+            background-color: #F99;
+        }
+        </style>
+        ".to_owned()
+    }
     pub async fn filter(&self, context : String) -> Result<String,String> {
     
         let input = vec![context];
