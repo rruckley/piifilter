@@ -1,4 +1,3 @@
-use rocket::form::prelude::NameView;
 
 use crate::docs::{Document,DocType};
 
@@ -29,13 +28,13 @@ impl RegexFilter {
             let matches = doc.pattern.find_iter(context.as_str());
             for m in matches {
                 //output.push_str(format!("{} : From {} to {}",doc.doc_type,m.start(),m.end()).as_str());
-                let start = m.start() as usize;
-                let end = m.end() as usize;
+                let start = m.start();
+                let end = m.end();
                 let fill = "X".repeat(end-start);
                 output.replace_range(start..end, &fill)
             }
         }
         
-        Ok(output)
+        Ok(format!("<div class=\"regex\">{}</div>",output))
     }
 }
