@@ -2,6 +2,7 @@
 use rust_bert::pipelines::{ner::NERModel, ner::Entity};
 use tokio::{sync::oneshot, task};
 
+
 use std::{
     sync::mpsc,
     thread::{self, JoinHandle},
@@ -25,11 +26,12 @@ impl NERFilter {
         while let Ok((context, sender)) = receiver.recv() {
             let input = [context.first().unwrap().as_str()];
             let output = ner_model.predict_full_entities(&input);
-            sender.send(output.to_owned());
+            let _result = sender.send(output.to_owned());
         }
 
         Ok("Finished.".to_owned())
     }
+
     pub async fn filter(&self, context : String) -> Result<String,String> {
         let mut mangle = String::from(&context);
         let input = vec![context];
