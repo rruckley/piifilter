@@ -53,7 +53,7 @@ impl NERFilter {
             let span = format!("<span class=\"{}\" start=\"{}\" finish=\"{}\">{}</span>",e.label,start,finish,e.word);
             mangle.replace_range(start..finish, span.as_str());
         } 
-        let result =format!("<div>{}</div>",mangle);
+        let result =format!("<div class=\"ner\">{}</div>",mangle);
         Ok(result)
     }
 }
