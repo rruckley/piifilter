@@ -14,7 +14,8 @@ impl RegexFilter {
         let ccert = Document::new(DocType::CitizenCertificate, 50);
         let driver = Document::new(DocType::DriverLicense, 50);
         let medicare = Document::new(DocType::Medicare, 30);
-        let docs = vec![cpass,epass,fpass,bcert,ccert,driver,medicare];
+        let iccid = Document::new(DocType::ICCID, 0);
+        let docs = vec![cpass,epass,fpass,bcert,ccert,driver,medicare,iccid];
         Self {
             docs,
         }
@@ -31,6 +32,7 @@ impl RegexFilter {
                 let start = m.start();
                 let end = m.end();
                 let fill = "X".repeat(end-start);
+                //let span = format!("<span class=\"{}\">{}</span>",doc.doc_type,fill);
                 output.replace_range(start..end, &fill)
             }
         }
