@@ -31,8 +31,16 @@ async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<
     let action = &form_data.action;
     let result = match action.as_str() {
         "regex" => process_regex(regex, form_data.text.clone()).await,
-        "nep" => process_ner(ner, form_data.text.clone()).await,
-        "pos" => process_pos(pos, form_data.text.clone()).await,
+        "nep" => {
+            let ner = process_ner(ner, form_data.text.clone()).await.unwrap();
+            let style = NERFilter::get_style();
+            Ok(format!("<html><head><title>NER</title>{}</head><h2>NER Output</h2><p>{}</p></html>",style,ner))
+        },
+        "pos" => {
+            let pos = process_pos(pos, form_data.text.clone()).await.unwrap();
+            let style = POSFilter::get_style();
+            Ok(format!("<html><head>{}</head><body>{}</body></html>",style,pos))
+        },
         "dialog" => process_dialog(dialog, form_data.text.clone()).await,
         "all" => {
             let ner = process_ner(ner, form_data.text.clone()).await.unwrap();
@@ -53,23 +61,18 @@ async fn process_regex(regex : &State<RegexFilter>,context : String) -> Result<S
 }
 
 async fn process_ner(ner : &State<NERFilter>, context : String) -> Result<String,String> {
-    let result = ner.filter(context).await?;
-    let style = NERFilter::get_style();
-    Ok(format!("<html><head><title>NER</title>{}</head><h2>NER Output</h2><p>{}</p></html>",style,result))
+    Ok(ner.filter(context).await?)
 }
 
 async fn process_pos(pos :&State<POSFilter>, context : String) -> Result<String,String> {
     // PoS tagging
-    let result = pos.filter(context).await?;
-    let style = POSFilter::get_style();
-
-    Ok(format!("<html><head>{}</head><body>{}</body></html>",style,result))
+    Ok(pos.filter(context).await?)
 }
 
 async fn process_dialog(dialog: &State<DialogFilter>, context : String) -> Result<String,String> {
     let result = dialog.filter(context).await?;
 
-    Ok(format!("<h2>Regular Expressions</h2>{}",result))
+    Ok(result)
 }
 
 #[get("/")]
