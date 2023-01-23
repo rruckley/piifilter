@@ -14,7 +14,7 @@ pub enum DocType {
     DriverLicense,
     ForeignPassport,
     Medicare,
-    ICCID,
+    Iccid,
 }
 
 impl std::fmt::Display for DocType {
@@ -27,7 +27,7 @@ impl std::fmt::Display for DocType {
             Self::DriverLicense => write!(f,"Drivers License"),
             Self::ForeignPassport => write!(f,"Foreign Passport"),
             Self::Medicare => write!(f,"Medicare Cart"),
-            Self::ICCID => write!(f,"SIM Card"),
+            Self::Iccid=> write!(f,"SIM Card"),
 
         }
     }
@@ -57,7 +57,7 @@ impl Document {
             DocType::DriverLicense => Regex::new("DRIVER").unwrap(),
             DocType::ForeignPassport  => Regex::new("FPASS").unwrap(),
             DocType::Medicare => Regex::new("\\d{4}-\\d{5}-\\d").unwrap(),
-            DocType::ICCID => Regex::new("\\d{13}").unwrap(),
+            DocType::Iccid => Regex::new("\\d{13}").unwrap(),
         }
     }
 }

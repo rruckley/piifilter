@@ -14,7 +14,7 @@ impl RegexFilter {
         let ccert = Document::new(DocType::CitizenCertificate, 50);
         let driver = Document::new(DocType::DriverLicense, 50);
         let medicare = Document::new(DocType::Medicare, 30);
-        let iccid = Document::new(DocType::ICCID, 0);
+        let iccid = Document::new(DocType::Iccid, 0);
         let docs = vec![cpass,epass,fpass,bcert,ccert,driver,medicare,iccid];
         Self {
             docs,
