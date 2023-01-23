@@ -22,7 +22,7 @@ impl SummaryFilter {
         (handle, SummaryFilter { sender })
     }
     fn runner(receiver: mpsc::Receiver<Message>) -> Result<String,String> {
-        let mut model = SummarizationModel::new(Default::default()).expect("Could not create Summary Model");
+        let model = SummarizationModel::new(Default::default()).expect("Could not create Summary Model");
 
         while let Ok((context, sender)) = receiver.recv() {
             let input = [context.first().unwrap().as_str()];
