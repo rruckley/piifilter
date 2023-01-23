@@ -68,12 +68,12 @@ async fn process_regex(regex : &State<RegexFilter>,context : String) -> Result<S
 }
 
 async fn process_ner(ner : &State<NERFilter>, context : String) -> Result<String,String> {
-    Ok(ner.filter(context).await?)
+    ner.filter(context).await
 }
 
 async fn process_pos(pos :&State<POSFilter>, context : String) -> Result<String,String> {
     // PoS tagging
-    Ok(pos.filter(context).await?)
+    pos.filter(context).await
 }
 
 async fn process_dialog(dialog: &State<DialogFilter>, context : String) -> Result<String,String> {
