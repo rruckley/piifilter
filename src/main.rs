@@ -8,11 +8,13 @@ mod ner;
 mod pos;
 mod regex;
 mod dialog;
+mod summary;
 mod docs;
 use docs::Document;
 
 use ner::NERFilter;
 use pos::POSFilter;
+use summary::SummaryFilter;
 use crate::regex::RegexFilter;
 use dialog::DialogFilter;
 
@@ -27,7 +29,7 @@ struct InputData {
 
 
 #[post("/process", data = "<form_data>")]
-async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<RegexFilter>,dialog : &State<DialogFilter>, form_data : Form<InputData>) -> (ContentType,String) {
+async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<RegexFilter>,dialog : &State<DialogFilter>, summary : &State<SummaryFilter>,form_data : Form<InputData>) -> (ContentType,String) {
     let action = &form_data.action;
     let result = match action.as_str() {
         "regex" => process_regex(regex, form_data.text.clone()).await,
@@ -41,6 +43,11 @@ async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<
             let style = POSFilter::get_style();
             Ok(format!("<html><head>{}</head><body>{}</body></html>",style,pos))
         },
+        "sum" => {
+            let sum = process_summary(summary, form_data.text.clone()).await.expect("Could not call summary filter");
+            let style = SummaryFilter::get_style();
+            Ok(format!("<html><head>{}</head><body>{}</html>",style,sum))
+        }
         "dialog" => process_dialog(dialog, form_data.text.clone()).await,
         "all" => {
             let ner = process_ner(ner, form_data.text.clone()).await.unwrap();
@@ -75,6 +82,12 @@ async fn process_dialog(dialog: &State<DialogFilter>, context : String) -> Resul
     Ok(result)
 }
 
+async fn process_summary(summary: &State<SummaryFilter>, context: String) -> Result<String,String> {
+    let result = summary.filter(context).await?;
+
+    Ok(result)
+}
+
 #[get("/")]
 async fn index() -> (ContentType, &'static str) {
     (ContentType::HTML, "
@@ -89,6 +102,7 @@ async fn index() -> (ContentType, &'static str) {
     <option value=\"regex\">Regular Expressions</option>
     <option value=\"nep\">Named Entity Parsing</option>
     <option value=\"pos\">Parts of Speech Tagging</option>
+    <option value=\"sum\">Summaru</option>
     <option value=\"all\">All</option>
     </select>
     <br />
@@ -106,10 +120,12 @@ async fn rocket() -> _ {
     let (_handle2, ner_filter) = NERFilter::spawn();
     let regex_filter= RegexFilter::new();
     let (_handle3,dialog_filter) = DialogFilter::spawn();
+    let (_handle3, summary_filter) = SummaryFilter::spawn();
     rocket::build()
         .manage(pos_filter)
         .manage(ner_filter)
         .manage(regex_filter)
         .manage(dialog_filter)
+        .manage(summary_filter)
         .mount("/", routes![index,process])
 }
