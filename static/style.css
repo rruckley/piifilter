@@ -1,3 +1,69 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+h2 {
+    text-align: center;
+}
+
 div {
-    background-color: grey;
+    background-color: #ccc;
+    border: 1px solid black;
+    border-radius: 10px;
+    padding: 1.5em;
+    width:80%;
+    margin-left: 10%;
+    margin-right: 10%;
+    box-shadow: 5px 5px 10px;
+}
+
+option,input {
+    border: none;
+    padding: 0 10px;
+    margin: 0;
+    width: 50%;
+}
+
+form {
+    position: relative;
+    padding: 1em;
+    box-sizing: border-box;
+    background-color: #ddd;
+    display: grid;
+    grid-gap: 10px;
+}
+
+span {
+    border: none;
+}
+
+span:hover {
+    border: 1px solid red;
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+    font-size:  100%;
+}
+
+button:focus,
+button:hover {
+    outline: none;
+    background: #000;
+    color: #fff;
+}
+
+button {
+    padding: 5px;
+    border: 2px solid #333;
+    background: none;
+    cursor: pointer;
+}
+
+textarea:focus,
+input:focus {
+    border-radius: 5px;
 }
