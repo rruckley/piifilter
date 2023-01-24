@@ -7,6 +7,8 @@ h2 {
 }
 
 div {
+    overflow: visible;
+    overflow-wrap: anywhere;
     background-color: #ccc;
     border: 1px solid black;
     border-radius: 10px;
@@ -37,8 +39,69 @@ span {
     border: none;
 }
 
+span.PER {
+    background-color: #9F9;
+}
+
+span.PER::after {
+    content: "]";
+}
+span.PER::before {
+    content: "PER:[";
+}
+
+span.LOC::before {
+    content: "LOC:[";
+}
+
+span.LOC::after {
+    content: "]";
+}
+span.MISC {
+    background-color: #99F;
+}
+span.LOC {
+    background-color: #FF9;
+}
+span.ORG {
+    background-color: #9F9;
+}
+
+span.ORG::before {
+    content: "ORG:[";
+}
+
+span.ORG::after {
+    content: "]";
+}
+
+
 span:hover {
     border: 1px solid red;
+}
+
+span.Passport {
+    background-color: #f99;
+}
+
+span.Passport::before {
+    content: "Passport:[";
+}
+
+span.MSN {
+    background-color: #9f9;
+}
+
+span.MSN::before {
+    content: "MSN:[";
+}
+
+span.MSN::after {
+    content: "]";
+}
+
+span.Passport::after {
+    content: "]";
 }
 
 button,
