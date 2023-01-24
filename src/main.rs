@@ -3,6 +3,7 @@ extern crate anyhow;
 use rocket::form::Form;
 use rocket::http::ContentType;
 use rocket::State;
+use rocket::fs::{FileServer,relative};
 
 mod ner;
 mod pos;
@@ -25,6 +26,12 @@ use dialog::DialogFilter;
 struct InputData {
     text : String,
     action : String,
+}
+
+fn get_style() -> String {
+"
+<link rel=\"stylesheet\" href=\"/static/style.css\" type=\"text/css\" />
+".to_owned()
 }
 
 
@@ -55,7 +62,8 @@ async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<
             let pos = process_pos(pos, form_data.text.clone()).await.unwrap();
             let ps = POSFilter::get_style();
             let reg = process_regex(regex, form_data.text.clone()).await.unwrap();
-            Ok(format!("<html><head>{}{}</head><body>{}<br />{}<br />{}</body>",ns,ps,ner,pos,reg))
+            let style = get_style();
+            Ok(format!("<html><head>{}{}{}</head><body>{}<br />{}<br />{}</body>",style,ns,ps,ner,pos,reg))
         }
         _ => Ok(format!("Invalid Action: {}",action))
     };
@@ -92,22 +100,27 @@ async fn process_summary(summary: &State<SummaryFilter>, context: String) -> Res
 async fn index() -> (ContentType, &'static str) {
     (ContentType::HTML, "
     <html>
-    <head><title>PII Experiments</title></head>
+    <head>
+        <title>PII Experiments</title>
+        <link rel=\"stylesheet\" href=\"/static/style.css\" type=\"text/css\" />
+    </head>
     <body>
     <h2>PII Filter</h2>
-    <form method=\"post\" action=\"/process\">
-    <textarea name=\"text\" rows=\"10\" cols=\"64\"></textarea>
-    <br />
-    <select name=\"action\">
-    <option value=\"regex\">Regular Expressions</option>
-    <option value=\"nep\">Named Entity Parsing</option>
-    <option value=\"pos\">Parts of Speech Tagging</option>
-    <option value=\"sum\">Summaru</option>
-    <option value=\"all\">All</option>
-    </select>
-    <br />
-    <input type=\"submit\" />
-    </form>
+    <div>
+        <form method=\"post\" action=\"/process\">
+            <textarea name=\"text\" rows=\"10\" cols=\"64\"></textarea>
+            <br />
+            <select name=\"action\">
+            <option value=\"regex\">Regular Expressions</option>
+            <option value=\"nep\">Named Entity Parsing</option>
+            <option value=\"pos\">Parts of Speech Tagging</option>
+            <option value=\"sum\">Summaru</option>
+            <option value=\"all\">All</option>
+            </select>
+            <br />
+            <input type=\"submit\" />
+        </form>
+    </div>
     </body>
     </html>
     ")
@@ -127,5 +140,6 @@ async fn rocket() -> _ {
         .manage(regex_filter)
         .manage(dialog_filter)
         .manage(summary_filter)
+        .mount("/static", FileServer::from(relative!("static")))
         .mount("/", routes![index,process])
 }
