@@ -34,18 +34,6 @@ impl NERFilter {
     pub fn get_style() -> String {
         "
         <style type=\"text/css\">
-        span.PER {
-            background-color: #9F9;
-        }
-        span.MISC {
-            background-color: #99F;
-        }
-        span.LOC {
-            background-color: #FF9;
-        }
-        span.ORG {
-            background-color: #9F9;
-        }
         </style>
         ".to_owned()
     }
