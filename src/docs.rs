@@ -15,6 +15,7 @@ pub enum DocType {
     ForeignPassport,
     Medicare,
     Iccid,
+    MobileServiceNumber,
 }
 
 impl std::fmt::Display for DocType {
@@ -28,6 +29,7 @@ impl std::fmt::Display for DocType {
             Self::ForeignPassport => write!(f,"Foreign Passport"),
             Self::Medicare => write!(f,"Medicare Cart"),
             Self::Iccid=> write!(f,"SIM Card"),
+            Self::MobileServiceNumber => write!(f,"MSN"),
 
         }
     }
@@ -50,7 +52,7 @@ impl Document {
     }
     fn get_regex(doc_type: &DocType) -> regex::Regex {
         match doc_type {
-            DocType::CurrentPassport => Regex::new("[A-Z][A-Z]?\\d{7}").unwrap(),
+            DocType::CurrentPassport => Regex::new("N[P]?\\d{7}").unwrap(),
             DocType::ExpiredPassport => Regex::new("EPASS").unwrap(),
             DocType::BirthCertificate => Regex::new("BCERT").unwrap(),
             DocType::CitizenCertificate => Regex::new("CCERT").unwrap(),
@@ -58,6 +60,7 @@ impl Document {
             DocType::ForeignPassport  => Regex::new("FPASS").unwrap(),
             DocType::Medicare => Regex::new("\\d{4}-\\d{5}-\\d").unwrap(),
             DocType::Iccid => Regex::new("\\d{13}").unwrap(),
+            DocType::MobileServiceNumber => Regex::new("04\\d{8}").unwrap(),
         }
     }
 }
