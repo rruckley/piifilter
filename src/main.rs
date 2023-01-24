@@ -38,22 +38,26 @@ fn get_style() -> String {
 #[post("/process", data = "<form_data>")]
 async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<RegexFilter>,dialog : &State<DialogFilter>, summary : &State<SummaryFilter>,form_data : Form<InputData>) -> (ContentType,String) {
     let action = &form_data.action;
+    let style = get_style();
     let result = match action.as_str() {
-        "regex" => process_regex(regex, form_data.text.clone()).await,
+        "regex" => {
+            let regex = process_regex(regex, form_data.text.clone()).await.unwrap();
+            Ok(format!("<html><head><title>Regular Expressions</title>{}</head><body><h2>Regular Expressions</h2>{}</body></html>",style,regex))
+        },
         "nep" => {
             let ner = process_ner(ner, form_data.text.clone()).await.unwrap();
-            let style = NERFilter::get_style();
-            Ok(format!("<html><head><title>NER</title>{}</head><h2>NER Output</h2><p>{}</p></html>",style,ner))
+            let ns = NERFilter::get_style();
+            Ok(format!("<html><head><title>NER</title>{}{}</head><h2>NER Output</h2><p>{}</p></html>",style,ns,ner))
         },
         "pos" => {
             let pos = process_pos(pos, form_data.text.clone()).await.unwrap();
-            let style = POSFilter::get_style();
-            Ok(format!("<html><head>{}</head><body>{}</body></html>",style,pos))
+            let ps = POSFilter::get_style();
+            Ok(format!("<html><head>{}{}</head><body>{}</body></html>",style,ps,pos))
         },
         "sum" => {
             let sum = process_summary(summary, form_data.text.clone()).await.expect("Could not call summary filter");
-            let style = SummaryFilter::get_style();
-            Ok(format!("<html><head>{}</head><body>{}</html>",style,sum))
+            let ss = SummaryFilter::get_style();
+            Ok(format!("<html><head>{}{}</head><body>{}</html>",style,ss,sum))
         }
         "dialog" => process_dialog(dialog, form_data.text.clone()).await,
         "all" => {
@@ -62,7 +66,7 @@ async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<
             let pos = process_pos(pos, form_data.text.clone()).await.unwrap();
             let ps = POSFilter::get_style();
             let reg = process_regex(regex, form_data.text.clone()).await.unwrap();
-            let style = get_style();
+            
             Ok(format!("<html><head>{}{}{}</head><body>{}<br />{}<br />{}</body>",style,ns,ps,ner,pos,reg))
         }
         _ => Ok(format!("Invalid Action: {}",action))
@@ -108,17 +112,17 @@ async fn index() -> (ContentType, &'static str) {
     <h2>PII Filter</h2>
     <div>
         <form method=\"post\" action=\"/process\">
-            <textarea name=\"text\" rows=\"10\" cols=\"64\"></textarea>
+            <textarea name=\"text\" rows=\"10\" cols=\"64\" autofocus=\"true\" required=\"true\"></textarea>
             <br />
             <select name=\"action\">
             <option value=\"regex\">Regular Expressions</option>
             <option value=\"nep\">Named Entity Parsing</option>
             <option value=\"pos\">Parts of Speech Tagging</option>
-            <option value=\"sum\">Summaru</option>
+            <option value=\"sum\">Summary</option>
             <option value=\"all\">All</option>
             </select>
             <br />
-            <input type=\"submit\" />
+            <button type=\"submit\">Process Text</button>
         </form>
     </div>
     </body>
