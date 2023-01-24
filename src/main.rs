@@ -41,8 +41,8 @@ async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<
     let style = get_style();
     let result = match action.as_str() {
         "regex" => {
-            let regex = process_regex(regex, form_data.text.clone()).await.unwrap();
-            Ok(format!("<html><head><title>Regular Expressions</title>{}</head><body><h2>Regular Expressions</h2>{}</body></html>",style,regex))
+            process_regex(regex, form_data.text.clone()).await
+            //Ok(format!("<html><head><title>Regular Expressions</title>{}</head><body><h2>Regular Expressions</h2>{}</body></html>",style,reg))
         },
         "nep" => {
             let ner = process_ner(ner, form_data.text.clone()).await.unwrap();
@@ -59,7 +59,10 @@ async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<
             let ss = SummaryFilter::get_style();
             Ok(format!("<html><head>{}{}</head><body>{}</html>",style,ss,sum))
         }
-        "dialog" => process_dialog(dialog, form_data.text.clone()).await,
+        "dialog" => {
+            let log = process_dialog(dialog, form_data.text.clone()).await.unwrap();
+            Ok(format!("<html><head>{}</head><body>{}</html>",style,log))
+        }
         "all" => {
             let ner = process_ner(ner, form_data.text.clone()).await.unwrap();
             let ns = NERFilter::get_style();
@@ -119,6 +122,7 @@ async fn index() -> (ContentType, &'static str) {
             <option value=\"nep\">Named Entity Parsing</option>
             <option value=\"pos\">Parts of Speech Tagging</option>
             <option value=\"sum\">Summary</option>
+            <option value=\"dialog\">Dialog</option>
             <option value=\"all\">All</option>
             </select>
             <br />
