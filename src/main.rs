@@ -11,13 +11,15 @@ mod regex;
 mod dialog;
 mod summary;
 mod docs;
-use docs::Document;
+mod qa;
 
+use docs::Document;
 use ner::NERFilter;
 use pos::POSFilter;
 use summary::SummaryFilter;
 use crate::regex::RegexFilter;
 use dialog::DialogFilter;
+use qa::QAFilter;
 
 
 #[macro_use] extern crate rocket;
@@ -25,6 +27,7 @@ use dialog::DialogFilter;
 #[derive(FromForm)]
 struct InputData {
     text : String,
+    question : String,
     action : String,
 }
 
@@ -36,7 +39,14 @@ fn get_style() -> String {
 
 
 #[post("/process", data = "<form_data>")]
-async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<RegexFilter>,dialog : &State<DialogFilter>, summary : &State<SummaryFilter>,form_data : Form<InputData>) -> (ContentType,String) {
+async fn process(
+        pos : &State<POSFilter>,
+        ner : &State<NERFilter>,
+        regex : &State<RegexFilter>,
+        dialog : &State<DialogFilter>, 
+        summary : &State<SummaryFilter>,
+        qa : &State<QAFilter>,
+        form_data : Form<InputData>) -> (ContentType,String) {
     let action = &form_data.action;
     let style = get_style();
     let result = match action.as_str() {
@@ -62,6 +72,13 @@ async fn process(pos : &State<POSFilter>,ner : &State<NERFilter>,regex : &State<
         "dialog" => {
             let log = process_dialog(dialog, form_data.text.clone()).await.unwrap();
             Ok(format!("<html><head>{}</head><body>{}</html>",style,log))
+        }
+        "qa" => {
+            let qa = process_qa(qa, 
+                form_data.question.clone(),
+                form_data.text.clone(),
+            ).await.unwrap();
+            Ok(format!("<html><head>{}</head><body>{}</body></html>",style,qa))
         }
         "all" => {
             let ner = process_ner(ner, form_data.text.clone()).await.unwrap();
@@ -103,6 +120,11 @@ async fn process_summary(summary: &State<SummaryFilter>, context: String) -> Res
     Ok(result)
 }
 
+async fn process_qa(qa: &State<QAFilter>,question : String, context: String) -> Result<String,String> {
+    let result = qa.filter(question, context).await?;
+    Ok(result)
+}
+
 #[get("/")]
 async fn index() -> (ContentType, &'static str) {
     (ContentType::HTML, "
@@ -123,9 +145,11 @@ async fn index() -> (ContentType, &'static str) {
             <option value=\"pos\">Parts of Speech Tagging</option>
             <option value=\"sum\">Summary</option>
             <option value=\"dialog\">Dialog</option>
+            <option value=\"qa\">Question / Answer</option>
             <option value=\"all\">All</option>
             </select>
             <br />
+            <input name=\"question\" />
             <button type=\"submit\">Process Text</button>
         </form>
     </div>
@@ -142,12 +166,14 @@ async fn rocket() -> _ {
     let regex_filter= RegexFilter::new();
     let (_handle3,dialog_filter) = DialogFilter::spawn();
     let (_handle3, summary_filter) = SummaryFilter::spawn();
+    let (_handle4, qa_filter) = QAFilter::spawn();
     rocket::build()
         .manage(pos_filter)
         .manage(ner_filter)
         .manage(regex_filter)
         .manage(dialog_filter)
         .manage(summary_filter)
+        .manage(qa_filter)
         .mount("/static", FileServer::from(relative!("static")))
         .mount("/", routes![index,process])
 }
