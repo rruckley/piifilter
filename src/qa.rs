@@ -27,9 +27,9 @@ pub fn spawn() -> (JoinHandle<Result<String,String>>, QAFilter) {
 
         while let Ok((context, sender)) = receiver.recv() {
                 let question = context.get(0).unwrap().to_string();
-                println!("Question: {:?}",context);
+                //println!("Question: {:?}",context);
                 let context = context.get(1..).unwrap().join("\n");
-                let output = model.predict(&[QaInput { question, context }], 1 , 32);
+                let output = model.predict(&[QaInput { question, context }], 3 , 48);
                 let _send_result = sender.send(output);
             }
         Ok("QA Runner Done".to_owned())
@@ -46,9 +46,13 @@ pub fn spawn() -> (JoinHandle<Result<String,String>>, QAFilter) {
         let mut result = "<div class=\"qa\">".to_owned();
         
         for summary in output {
+            result.push_str("<ul>");
             for a in summary {
+                result.push_str("<li>");
                 result.push_str(format!("Answer:{} Score: {} Start: {} End: {}",a.answer.as_str(),a.score,a.start,a.end).as_str());
+                result.push_str("</li>\n")
             };   
+            result.push_str("</ul>")
         };
         result.push_str("</div>");
         Ok(result)
