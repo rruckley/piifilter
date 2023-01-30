@@ -1,4 +1,4 @@
-ARG RUST_VERSION=1.64
+ARG RUST_VERSION=1.66
 FROM rust:${RUST_VERSION}-slim-bullseye as build
 
 # Build environment proxy
