@@ -24,12 +24,10 @@ impl DialogFilter {
         let conversation_model = ConversationModel::new(Default::default()).expect("Could not create dialog model");
         let mut conversation_manager = ConversationManager::new();
 
-        while let Ok((context, sender)) = receiver.recv() {
+        let (context, _sender) = receiver.recv().unwrap();
             // Nothing to be done here for now
-            let _conversation_id = conversation_manager.create(context.first().unwrap());
-            let output = conversation_model.generate_responses(&mut conversation_manager);
-            let _send_result = sender.send(output);
-        }
+        let _conversation_id = conversation_manager.create(context.first().unwrap());
+        
 
         Ok("Finished.".to_owned())
     }
