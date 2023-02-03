@@ -21,11 +21,14 @@ impl DialogFilter {
         (handle, DialogFilter { sender })
     }
     fn runner(receiver: mpsc::Receiver<Message>) -> Result<String,String> {
-        let _conversation_model = ConversationModel::new(Default::default()).expect("Could not create dialog model");
-        let mut _conversation_manager = ConversationManager::new();
+        let conversation_model = ConversationModel::new(Default::default()).expect("Could not create dialog model");
+        let mut conversation_manager = ConversationManager::new();
 
-        while let Ok((_context, _sender)) = receiver.recv() {
+        while let Ok((context, sender)) = receiver.recv() {
             // Nothing to be done here for now
+            let _conversation_id = conversation_manager.create(context.first().unwrap());
+            let output = conversation_model.generate_responses(&mut conversation_manager);
+            let _send_result = sender.send(output);
         }
 
         Ok("Finished.".to_owned())

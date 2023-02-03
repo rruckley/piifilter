@@ -1,14 +1,18 @@
 [package]
 name = "piifilter"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0.68"
+opentelemetry = "0.18.0"
+opentelemetry-otlp = "0.11.0"
 regex = "1.7.1"
 rocket = "0.5.0-rc.2"
-rust-bert = "0.19.0"
+rust-bert = "0.20.0"
 tokio = "1.24.1"
+tracing = "0.1.37"
+tracing-opentelemetry = "0.18.0"
 uuid = { version = "1.1.2", features = ["v4"] }
