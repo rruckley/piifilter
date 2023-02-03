@@ -15,4 +15,5 @@ rust-bert = "0.20.0"
 tokio = "1.24.1"
 tracing = "0.1.37"
 tracing-opentelemetry = "0.18.0"
+tracing-subscriber = "0.3.16"
 uuid = { version = "1.1.2", features = ["v4"] }
