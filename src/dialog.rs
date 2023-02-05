@@ -21,7 +21,7 @@ impl DialogFilter {
         (handle, DialogFilter { sender })
     }
     fn runner(receiver: mpsc::Receiver<Message>) -> Result<String,String> {
-        let conversation_model = ConversationModel::new(Default::default()).expect("Could not create dialog model");
+        let _conversation_model = ConversationModel::new(Default::default()).expect("Could not create dialog model");
         let mut conversation_manager = ConversationManager::new();
 
         let (context, _sender) = receiver.recv().unwrap();
