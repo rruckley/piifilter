@@ -1,10 +1,20 @@
 extern crate anyhow;
 
+
+// Tracing
+use opentelemetry::sdk::{trace, export};
+use opentelemetry::trace::{Tracer, FutureExt};
+use opentelemetry_otlp::WithExportConfig;
+use tracing::instrument;
+use tracing_subscriber::Registry;
+
+// Rocker
 use rocket::form::Form;
 use rocket::http::ContentType;
 use rocket::State;
 use rocket::fs::{FileServer,relative};
 
+// Modules
 mod ner;
 mod pos;
 mod regex;
@@ -17,6 +27,7 @@ use docs::Document;
 use ner::NERFilter;
 use pos::POSFilter;
 use summary::SummaryFilter;
+
 use crate::regex::RegexFilter;
 use dialog::DialogFilter;
 use qa::QAFilter;
@@ -125,6 +136,7 @@ async fn process_qa(qa: &State<QAFilter>,question : String, context: String) -> 
     Ok(result)
 }
 
+#[instrument]
 #[get("/")]
 async fn index() -> (ContentType, &'static str) {
     (ContentType::HTML, "
@@ -160,6 +172,25 @@ async fn index() -> (ContentType, &'static str) {
 
 #[launch]
 async fn rocket() -> _ {
+    // Setup tracing
+
+    let exporter = opentelemetry_otlp::new_exporter()
+        .tonic()
+        .with_endpoint("http://10.122.13.226:4317");
+
+    let tracer = opentelemetry_otlp::new_pipeline()
+        .tracing()
+        .with_exporter(exporter)
+        .install_simple()
+        .expect("Could not create tracer");
+    
+    tracer.in_span("doing_work", |cx| {
+        // Some logic
+    });
+    //let tracing_layer = tracing_opentelemetry::layer().with_tracer(tracer);
+    let subscriber = Registry::default();
+    tracing::subscriber::set_global_default(subscriber).expect("Could not set global default");
+
     let _passport = Document::new(docs::DocType::CurrentPassport,70);
     let (_handle1, pos_filter) = POSFilter::spawn();
     let (_handle2, ner_filter) = NERFilter::spawn();
