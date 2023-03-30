@@ -9,6 +9,7 @@ use std::{
 };
 
 type Message = (Vec<String>, oneshot::Sender<HashMap<& 'static uuid::Uuid,& 'static str>>);
+#[derive(Debug)]
 pub struct DialogFilter {
     sender: mpsc::SyncSender<Message>,
 }
