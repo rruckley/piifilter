@@ -8,6 +8,7 @@ use rust_bert::pipelines::pos_tagging::POSModel;
 use rust_bert::pipelines::pos_tagging::POSTag;
 
 type Message = (Vec<String>,oneshot::Sender<Vec<Vec<POSTag>>>);
+#[derive(Debug)]
 pub struct POSFilter {
     sender: mpsc::SyncSender<Message>
 }
