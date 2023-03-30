@@ -10,6 +10,7 @@ use rust_bert::pipelines::summarization::SummarizationModel;
 
 type Message = (Vec<String>,oneshot::Sender<Vec<String>>);
 
+#[derive(Debug)]
 pub struct SummaryFilter {
     sender: mpsc::SyncSender<Message>
 }
