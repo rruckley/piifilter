@@ -2,14 +2,17 @@
 use crate::docs::{Document,DocType};
 use regex::*;
 
+#[derive(Debug)]
 pub struct RegexFilter {
     docs : Vec<Document>,
 }
+
 
 struct RegexMatch<'a> {
     doc_type : String,
     matched : Match<'a>,
 }
+
 
 impl RegexFilter {
     pub fn new() -> Self {

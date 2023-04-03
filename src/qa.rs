@@ -8,7 +8,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-
+#[derive(Debug)]
 pub struct QAFilter {
     sender: mpsc::SyncSender<Message>
 }

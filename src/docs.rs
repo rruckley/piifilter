@@ -35,6 +35,7 @@ impl std::fmt::Display for DocType {
     }
 }
 
+#[derive(Debug)]
 pub struct Document {
     pub doc_type : DocType,
     pub points : u32 ,

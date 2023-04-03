@@ -9,6 +9,7 @@ use std::{
 };
 
 type Message = (Vec<String>, oneshot::Sender<HashMap<& 'static uuid::Uuid,& 'static str>>);
+#[derive(Debug)]
 pub struct DialogFilter {
     sender: mpsc::SyncSender<Message>,
 }
@@ -22,11 +23,12 @@ impl DialogFilter {
     }
     fn runner(receiver: mpsc::Receiver<Message>) -> Result<String,String> {
         let _conversation_model = ConversationModel::new(Default::default()).expect("Could not create dialog model");
-        let mut _conversation_manager = ConversationManager::new();
+        let mut conversation_manager = ConversationManager::new();
 
-        while let Ok((_context, _sender)) = receiver.recv() {
+        let (context, _sender) = receiver.recv().unwrap();
             // Nothing to be done here for now
-        }
+        let _conversation_id = conversation_manager.create(context.first().unwrap());
+        
 
         Ok("Finished.".to_owned())
     }

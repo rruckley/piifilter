@@ -9,6 +9,7 @@ use std::{
 };
 
 type Message = (Vec<String>, oneshot::Sender<Vec<Vec<Entity>>>);
+#[derive(Debug)]
 pub struct NERFilter {
     sender: mpsc::SyncSender<Message>,
 }
