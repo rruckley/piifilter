@@ -5,8 +5,6 @@ use rocket::http::ContentType;
 use rocket::State;
 use rocket::fs::{FileServer,relative};
 
-use log::{debug};
-
 mod ner;
 mod pos;
 mod regex;
@@ -197,9 +195,9 @@ async fn rocket() -> _ {
     let (_handle2, ner_filter) = NERFilter::spawn();
     let regex_filter= RegexFilter::new();
     let (_handle3,dialog_filter) = DialogFilter::spawn();
-    let (_handle3, summary_filter) = SummaryFilter::spawn();
-    let (_handle4, qa_filter) = QAFilter::spawn();
-    let (_handle5, embed_filter) = EmbedFilter::spawn();
+    let (_handle4, summary_filter) = SummaryFilter::spawn();
+    let (_handle5, qa_filter) = QAFilter::spawn();
+    let (_handle6, embed_filter) = EmbedFilter::spawn();
     rocket::build()
         .manage(pos_filter)
         .manage(ner_filter)

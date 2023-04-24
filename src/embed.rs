@@ -36,10 +36,9 @@ impl EmbedFilter {
         let model = SentenceEmbeddingsBuilder::remote(
             SentenceEmbeddingsModelType::AllMiniLmL12V2
         )
-        .create_model().map_err(|e| "Test".to_string()).expect("Could not create model");
+        .create_model().map_err(|e| e.to_string()).expect("Could not create model");
 
         while let Ok((context, sender)) = receiver.recv() {
-            let input = [context.first().unwrap().as_str()];
             //let output = ner_model.predict_full_entities(&input);
             let output = model.encode(context.as_slice()).map_err(|e| e.to_string()).unwrap();
             let _result = sender.send(output.to_owned());
