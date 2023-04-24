@@ -5,6 +5,8 @@ use rocket::http::ContentType;
 use rocket::State;
 use rocket::fs::{FileServer,relative};
 
+use log::{debug};
+
 mod ner;
 mod pos;
 mod regex;
@@ -12,10 +14,12 @@ mod dialog;
 mod summary;
 mod docs;
 mod qa;
+mod embed;
 
 use docs::Document;
 use ner::NERFilter;
 use pos::POSFilter;
+use embed::EmbedFilter;
 use summary::SummaryFilter;
 use crate::regex::RegexFilter;
 use dialog::DialogFilter;
@@ -46,6 +50,7 @@ async fn process(
         dialog : &State<DialogFilter>, 
         summary : &State<SummaryFilter>,
         qa : &State<QAFilter>,
+        embed : &State<EmbedFilter>,
         form_data : Form<InputData>) -> (ContentType,String) {
     let action = &form_data.action;
     let style = get_style();
@@ -68,18 +73,24 @@ async fn process(
             let sum = process_summary(summary, form_data.text.clone()).await.expect("Could not call summary filter");
             let ss = SummaryFilter::get_style();
             Ok(format!("<html><head>{}{}</head><body>{}</html>",style,ss,sum))
-        }
+        },
         "dialog" => {
             let log = process_dialog(dialog, form_data.text.clone()).await.unwrap();
             Ok(format!("<html><head>{}</head><body>{}</html>",style,log))
-        }
+        },
         "qa" => {
             let qa = process_qa(qa, 
                 form_data.question.clone(),
                 form_data.text.clone(),
             ).await.unwrap();
             Ok(format!("<html><head>{}</head><body>{}</body></html>",style,qa))
-        }
+        },
+        "embed" => {
+            let embed = process_embed(embed,
+                form_data.text.clone(),
+            ).await.unwrap();
+            Ok(format!("<html><head>{}</head><body>{}</body></html>",style,embed))
+        },
         "all" => {
             let ner = process_ner(ner, form_data.text.clone()).await.unwrap();
             let ns = NERFilter::get_style();
@@ -88,7 +99,7 @@ async fn process(
             let reg = process_regex(regex, form_data.text.clone()).await.unwrap();
             
             Ok(format!("<html><head>{}{}{}</head><body>{}<br />{}<br />{}</body>",style,ns,ps,ner,pos,reg))
-        }
+        },
         _ => Ok(format!("Invalid Action: {}",action))
     };
     (ContentType::HTML,result.unwrap())
@@ -125,6 +136,23 @@ async fn process_qa(qa: &State<QAFilter>,question : String, context: String) -> 
     Ok(result)
 }
 
+async fn process_embed(embed: &State<EmbedFilter>, content : String) -> Result<String,String> {
+    // Turn content into a Vec<String>
+    let lines : Vec<String> = content.lines().into_iter().map(|l| l.to_string()).collect();
+    let result = embed.filter(lines).await;
+    match result {
+        Ok(r) => {
+            info!("Found parent vector of size {}",r.len());
+            r.iter().for_each(|v| {
+                info!("Found vector of size {}",v.len())
+            });
+            Ok("Success".to_string())
+        },
+        Err(e) => Err(e),    
+    }
+    
+}
+
 #[get("/")]
 async fn index() -> (ContentType, &'static str) {
     (ContentType::HTML, "
@@ -140,13 +168,14 @@ async fn index() -> (ContentType, &'static str) {
             <textarea name=\"text\" rows=\"10\" cols=\"64\" autofocus=\"true\" required=\"true\"></textarea>
             <br />
             <select name=\"action\">
-            <option value=\"regex\">Regular Expressions</option>
-            <option value=\"nep\">Named Entity Parsing</option>
-            <option value=\"pos\">Parts of Speech Tagging</option>
-            <option value=\"sum\">Summary</option>
-            <option value=\"dialog\">Dialog</option>
-            <option value=\"qa\">Question / Answer</option>
-            <option value=\"all\">All</option>
+                <option value=\"regex\">Regular Expressions</option>
+                <option value=\"nep\">Named Entity Parsing</option>
+                <option value=\"pos\">Parts of Speech Tagging</option>
+                <option value=\"sum\">Summary</option>
+                <option value=\"dialog\">Dialog</option>
+                <option value=\"qa\">Question / Answer</option>
+                <option value=\"embed\">Sentence Embedding</option>
+                <option value=\"all\">All</option>
             </select>
             <br />
             <input name=\"question\" />
@@ -160,6 +189,9 @@ async fn index() -> (ContentType, &'static str) {
 
 #[launch]
 async fn rocket() -> _ {
+    env_logger::init();
+    let version = env!("CARGO_PKG_VERSION");
+    info!("Starting piifilter {version}");
     let _passport = Document::new(docs::DocType::CurrentPassport,70);
     let (_handle1, pos_filter) = POSFilter::spawn();
     let (_handle2, ner_filter) = NERFilter::spawn();
@@ -167,6 +199,7 @@ async fn rocket() -> _ {
     let (_handle3,dialog_filter) = DialogFilter::spawn();
     let (_handle3, summary_filter) = SummaryFilter::spawn();
     let (_handle4, qa_filter) = QAFilter::spawn();
+    let (_handle5, embed_filter) = EmbedFilter::spawn();
     rocket::build()
         .manage(pos_filter)
         .manage(ner_filter)
@@ -174,6 +207,7 @@ async fn rocket() -> _ {
         .manage(dialog_filter)
         .manage(summary_filter)
         .manage(qa_filter)
+        .manage(embed_filter)
         .mount("/static", FileServer::from(relative!("static")))
         .mount("/", routes![index,process])
 }
