@@ -14,6 +14,7 @@ mod docs;
 mod qa;
 mod embed;
 mod qdrant;
+mod config;
 
 use docs::Document;
 use ner::NERFilter;
@@ -23,7 +24,9 @@ use summary::SummaryFilter;
 use crate::regex::RegexFilter;
 use dialog::DialogFilter;
 use qa::QAFilter;
-use qdrant::{QDrant, QDrantPoints, QDrantPoint};
+use qdrant::{QDrant, QDrantPoints, QDrantPoint,QDrantPayload};
+use config::Config;
+use uuid::Uuid;
 
 
 #[macro_use] extern crate rocket;
@@ -139,21 +142,25 @@ async fn process_embed(embed: &State<EmbedFilter>, content : String) -> Result<S
     // Turn content into a Vec<String>
     let lines : Vec<String> = content.lines().map(|l| l.to_string()).collect();
     let result = embed.filter(lines).await;
+    let qdrant = QDrant::new(
+        Config::get("QDRANT_HOST").unwrap(),
+        Config::get("QDRANT_COLLECTION").unwrap()
+    );
     match result {
         Ok(r) => {
             info!("Found parent vector of size {}",r.len());
             let mut points : Vec<QDrantPoint> = vec![];
             for v in r {
                 points.push(QDrantPoint {
-                    id : 5,
-                    payload : "{}".to_string(),
+                    id : Uuid::new_v4().to_string(),
+                    payload : QDrantPayload {  },
                     vector: v,    
                 });
             }
             let vector = QDrantPoints {
                 points
             };
-            match QDrant::store(vector) {
+            match qdrant.store(vector).await {
                 Ok(m) => {
                     info!("Stored vector to QDrant");
                     Ok(m)
