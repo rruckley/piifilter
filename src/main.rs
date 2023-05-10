@@ -41,7 +41,6 @@ fn get_style() -> String {
 ".to_owned()
 }
 
-
 #[post("/process", data = "<form_data>")]
 async fn process(
         pos : &State<POSFilter>,
@@ -138,7 +137,7 @@ async fn process_qa(qa: &State<QAFilter>,question : String, context: String) -> 
 
 async fn process_embed(embed: &State<EmbedFilter>, content : String) -> Result<String,String> {
     // Turn content into a Vec<String>
-    let lines : Vec<String> = content.lines().into_iter().map(|l| l.to_string()).collect();
+    let lines : Vec<String> = content.lines().map(|l| l.to_string()).collect();
     let result = embed.filter(lines).await;
     match result {
         Ok(r) => {
