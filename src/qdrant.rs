@@ -21,7 +21,6 @@ impl QDrant {
     pub fn store(points : QDrantPoints) -> Result<String,String> {
         let count = points.points.len();
         info!("Storing {count} points");
-        dbg!(points);
         Ok("Not implemented".to_string())
     }
 }
