@@ -13,5 +13,7 @@ regex = "1.7.1"
 reqwest = "0.11.17"
 rocket = "0.5.0-rc.3"
 rust-bert = "0.20"
+serde = { verison = "1.0.162", features = ["derive"]}
+serde_json = "1.0.96"
 tokio = "1.24.1"
 uuid = { version = "1.1.2", features = ["v4"] }
