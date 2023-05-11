@@ -93,6 +93,12 @@ async fn process(
             ).await.unwrap();
             Ok(format!("<html><head>{}</head><body>{}</body></html>",style,embed))
         },
+        "semantic" => {
+            let semantic = process_semantic(embed, 
+                form_data.text.clone()
+            ).await.unwrap();
+            Ok(format!("<html><head>{}</head><body>{}</body></html>",style,semantic))
+        },
         "all" => {
             let ner = process_ner(ner, form_data.text.clone()).await.unwrap();
             let ns = NERFilter::get_style();
@@ -177,6 +183,24 @@ async fn process_embed(embed: &State<EmbedFilter>, content : String) -> Result<S
     
 }
 
+async fn process_semantic(embed: &State<EmbedFilter>, content: String) -> Result<String,String> {
+    let lines : Vec<String> = content.lines().map(|l| l.to_string()).collect();
+    let result = embed.filter(lines).await.unwrap();
+    let vec = result.first().unwrap().clone();
+    let qdrant = QDrant::new(
+        Config::get("QDRANT_HOST").unwrap(),
+        Config::get("QDRANT_COLLECTION").unwrap()
+    );
+    let result =  qdrant.search(vec).await?;
+
+    let mut output = "<li>".to_string();
+    for r in result {
+        output.push_str(r.as_str());
+    }
+
+    Ok(output)
+}
+
 #[get("/")]
 async fn index() -> (ContentType, &'static str) {
     (ContentType::HTML, "
@@ -199,6 +223,7 @@ async fn index() -> (ContentType, &'static str) {
                 <option value=\"dialog\">Dialog</option>
                 <option value=\"qa\">Question / Answer</option>
                 <option value=\"embed\">Sentence Embedding</option>
+                <option value=\"semantic\">Semantic Search</option>
                 <option value=\"all\">All</option>
             </select>
             <br />
