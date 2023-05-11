@@ -1,9 +1,9 @@
 // API into QDrant vector database
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug,Serialize)]
+#[derive(Debug,Serialize,Deserialize)]
 pub struct QDrantPayload {
-
+    pub phrase : Option<String>,
 }
 
 type QDrantVector = Vec<f32>;
@@ -43,6 +43,7 @@ pub struct QDrantSearch {
 pub struct QDrantScoredVec {
     id  : String,
     score   : f32,
+    payload : Option<QDrantPayload>,
 }
 
 #[derive(Debug,Deserialize)]
@@ -96,10 +97,15 @@ impl QDrant {
         match req.post(url).body(body).send().await {
             Ok(r) => {
                 info!("Results from Qdrant!");
-                let response : QDrantResponse = serde_json::from_str(r.text().await.unwrap().as_str()).unwrap();
+                let body = r.text().await.unwrap();
+                let response : QDrantResponse = serde_json::from_str(body.as_str()).expect("Could not parse JSON");
                 let mut output : Vec<String> = vec![];
                 for v in response.result {
-                    output.push(v.id);
+                    let phrase = match v.payload {
+                        Some(p) => p.phrase,
+                        None => Some("No phrase".to_string()),
+                    };
+                    output.push(format!("[{}] {}",v.score,phrase.unwrap()));
                 }
                 Ok(output)
             }
