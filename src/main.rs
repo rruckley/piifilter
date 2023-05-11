@@ -147,7 +147,7 @@ async fn process_qa(qa: &State<QAFilter>,question : String, context: String) -> 
 async fn process_embed(embed: &State<EmbedFilter>, content : String) -> Result<String,String> {
     // Turn content into a Vec<String>
     let lines : Vec<String> = content.lines().map(|l| l.to_string()).collect();
-    let result = embed.filter(lines).await;
+    let result = embed.filter(lines.clone()).await;
     let qdrant = QDrant::new(
         Config::get("QDRANT_HOST").unwrap(),
         Config::get("QDRANT_COLLECTION").unwrap()
@@ -156,11 +156,11 @@ async fn process_embed(embed: &State<EmbedFilter>, content : String) -> Result<S
         Ok(r) => {
             info!("Found parent vector of size {}",r.len());
             let mut points : Vec<QDrantPoint> = vec![];
-            for v in r {
+            for (v,l) in r.iter().zip(lines) {
                 points.push(QDrantPoint {
                     id : Uuid::new_v4().to_string(),
-                    payload : QDrantPayload {  },
-                    vector: v,    
+                    payload : QDrantPayload { phrase : Some(l) },
+                    vector: v.to_vec(),    
                 });
             }
             let vector = QDrantPoints {
@@ -193,10 +193,11 @@ async fn process_semantic(embed: &State<EmbedFilter>, content: String) -> Result
     );
     let result =  qdrant.search(vec).await?;
 
-    let mut output = "<li>".to_string();
+    let mut output = "<ul>".to_string();
     for r in result {
-        output.push_str(r.as_str());
+        output.push_str(format!("<li>{}</li>",r.as_str()).as_str());
     }
+    output.push_str("</ul>");
 
     Ok(output)
 }
