@@ -185,7 +185,7 @@ async fn process_embed(embed: &State<EmbedFilter>, content : String) -> Result<S
 
 async fn process_semantic(embed: &State<EmbedFilter>, content: String) -> Result<String,String> {
     let lines : Vec<String> = content.lines().map(|l| l.to_string()).collect();
-    let result = embed.filter(lines).await.unwrap();
+    let result = embed.filter(lines.clone()).await.unwrap();
     let vec = result.first().unwrap().clone();
     let qdrant = QDrant::new(
         Config::get("QDRANT_HOST").unwrap(),
@@ -193,7 +193,8 @@ async fn process_semantic(embed: &State<EmbedFilter>, content: String) -> Result
     );
     let result =  qdrant.search(vec).await?;
 
-    let mut output = "<ul>".to_string();
+    let mut output = format!("<p>Query: {}<p>",&lines.first().unwrap());
+    output.push_str("<ul>");
     for r in result {
         output.push_str(format!("<li>{}</li>",r.as_str()).as_str());
     }
